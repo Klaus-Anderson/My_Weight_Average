@@ -1,4 +1,4 @@
-package com.angussoftware.myweightaverage
+package com.angussoftware.myweightaverage.activity
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -7,6 +7,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.WeightRecord
+import com.angussoftware.myweightaverage.R
 import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity() {
