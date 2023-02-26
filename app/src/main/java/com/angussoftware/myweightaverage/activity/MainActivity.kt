@@ -37,6 +37,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val viewModel: MainActivityViewModel by viewModels()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect {
+                    // Update UI elements
+                }
+            }
+        }
+
         if (HealthConnectClient.isProviderAvailable(this)) {
             val healthConnectClient = HealthConnectClient.getOrCreate(this)
             findViewById<TextView>(R.id.textView).text = healthConnectClient.toString()
