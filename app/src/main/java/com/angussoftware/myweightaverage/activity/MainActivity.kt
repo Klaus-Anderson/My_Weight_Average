@@ -1,75 +1,47 @@
 package com.angussoftware.myweightaverage.activity
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.TextView
-import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.PermissionController
-import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.WeightRecord
+import androidx.appcompat.app.AppCompatActivity
+import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.ViewModelProvider
 import com.angussoftware.myweightaverage.R
-import kotlinx.coroutines.*
+import com.angussoftware.myweightaverage.databinding.ActivityMainBinding
+import com.angussoftware.myweightaverage.viewmodel.MainActivityViewModel
 
 class MainActivity : AppCompatActivity() {
 
-    val PERMISSIONS =
-        setOf(
-            HealthPermission.getReadPermission(WeightRecord::class),
-        )
+    private lateinit var viewModel: MainActivityViewModel
 
-    // Create the permissions launcher.
-    val requestPermissionActivityContract = PermissionController.createRequestPermissionResultContract()
-
-    val requestPermissions =
-        registerForActivityResult(requestPermissionActivityContract) { granted ->
-            if (granted.containsAll(PERMISSIONS)) {
-                // Permissions successfully granted
-                findViewById<TextView>(R.id.textView).text = "Permissions successfully granted"
-
-            } else {
-                // Lack of required permissions
-                findViewById<TextView>(R.id.textView).text = "Lack of required permissions"
-            }
-        }
-
-    @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val viewModel: MainActivityViewModel by viewModels()
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect {
-                    // Update UI elements
-                }
-            }
-        }
+        viewModel = ViewModelProvider(this)[MainActivityViewModel::class.java]
 
-        if (HealthConnectClient.isProviderAvailable(this)) {
-            val healthConnectClient = HealthConnectClient.getOrCreate(this)
-            findViewById<TextView>(R.id.textView).text = healthConnectClient.toString()
+        val binding: ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+        binding.viewModel = viewModel
+        binding.lifecycleOwner = this
 
-            // build a set of permissions for required data types
-
-            GlobalScope.launch {
-                checkPermissionsAndRun(healthConnectClient)
-            }
-        } else {
-            // ...
+        viewModel.launchPermissionRequest.observe(this) {
+            val permissions = MainActivityViewModel.requiredPermissions.toTypedArray()
+            requestPermissions(permissions, PERMISSIONS_REQUEST_CODE)
         }
     }
 
-    suspend fun checkPermissionsAndRun(healthConnectClient: HealthConnectClient) {
-        val granted = healthConnectClient.permissionController.getGrantedPermissions()
-        if (granted.containsAll(PERMISSIONS)) {
-            // Permissions already granted, proceed with inserting or reading data.
-            runOnUiThread {
-                findViewById<TextView>(R.id.textView).text = "Permissions already granted, proceed with inserting or reading data."
-            }
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        if (requestCode == PERMISSIONS_REQUEST_CODE) {
+            viewModel.checkPermissionsAndRun()
         } else {
-            requestPermissions.launch(PERMISSIONS)
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
     }
 
+    companion object {
+        private const val PERMISSIONS_REQUEST_CODE = 100
+    }
 }
+
