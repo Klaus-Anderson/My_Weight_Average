@@ -1,22 +1,20 @@
 package com.angussoftware.myweightaverage.viewmodel
 
 import android.app.Application
-import android.content.Context
-import android.content.Intent
-import android.widget.TextView
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.WeightRecord
+import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.angussoftware.myweightaverage.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.*
+import java.util.concurrent.TimeUnit
 
 class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -34,7 +32,7 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
             withContext(Dispatchers.IO) {
                 _textViewText.postValue(initHealthConnectClient()?.run {
                     checkPermissionsAndRun()
-                    toString()
+                    "HealthConnectClient is not available"
                 } ?: "HealthConnectClient is not available")
             }
         }
@@ -53,9 +51,39 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
             val granted = permissionController.getGrantedPermissions()
             if (granted.containsAll(Companion.requiredPermissions)) {
                 // Permissions already granted, proceed with inserting or reading data.
-                // Do something here
+                fetchAndDisplayCurrentWeight()
             } else {
                 _launchPermissionRequest.value = Unit
+            }
+        }
+    }
+
+    private suspend fun fetchAndDisplayCurrentWeight() {
+        val client = initHealthConnectClient() ?: return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val endDateTime = LocalDateTime.now()
+            val startDateTime = endDateTime.minusDays(365)
+
+            val weightRecords = client.readRecords(
+                ReadRecordsRequest(
+                    WeightRecord::class,
+                    TimeRangeFilter.between(
+                        startDateTime,
+                        endDateTime
+                    )
+                )
+            ).records
+
+            val currentWeight = weightRecords.firstOrNull()?.weight
+            if (currentWeight != null) {
+                withContext(Dispatchers.Main) {
+                    _textViewText.value = "Current Weight: $currentWeight kg"
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    _textViewText.value = "No recent weight data available"
+                }
             }
         }
     }
@@ -66,4 +94,3 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         )
     }
 }
-
