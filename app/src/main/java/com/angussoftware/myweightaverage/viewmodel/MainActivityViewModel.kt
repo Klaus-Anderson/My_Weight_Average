@@ -10,6 +10,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.anychart.chart.common.dataentry.DataEntry
+import com.anychart.chart.common.dataentry.ValueDataEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -21,11 +23,16 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
     private val permissionController = HealthConnectClient.getOrCreate(application).permissionController
     private val _launchPermissionRequest = MutableLiveData<Unit>()
     private val _textViewText = MutableLiveData<String>()
+    private val _chartData = MutableLiveData<List<DataEntry>>()
+
     val launchPermissionRequest: LiveData<Unit>
         get() = _launchPermissionRequest
 
     val textViewText: LiveData<String>
         get() = _textViewText
+
+    val chartData: LiveData<List<DataEntry>>
+        get() = _chartData
 
     init {
         viewModelScope.launch {
@@ -84,6 +91,14 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
                 withContext(Dispatchers.Main) {
                     _textViewText.value = "No recent weight data available"
                 }
+            }
+
+            val chartDataList = weightRecords.map { record ->
+                ValueDataEntry(record.time.toString(), record.weight.inKilograms)
+            }
+
+            withContext(Dispatchers.Main) {
+                _chartData.value = chartDataList
             }
         }
     }
