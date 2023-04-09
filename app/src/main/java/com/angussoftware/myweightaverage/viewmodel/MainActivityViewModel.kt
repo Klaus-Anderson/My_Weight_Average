@@ -113,6 +113,14 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    fun setStartDate(year: Int, month: Int, dayOfMonth: Int) {
+//        TODO("Not yet implemented")
+    }
+
+    fun setEndDate(year: Int, month: Int, dayOfMonth: Int) {
+//        TODO("Not yet implemented")
+    }
+
     companion object {
         val requiredPermissions = setOf(
             HealthPermission.getReadPermission(WeightRecord::class),

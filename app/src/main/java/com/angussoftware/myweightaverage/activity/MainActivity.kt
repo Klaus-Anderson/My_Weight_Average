@@ -1,5 +1,6 @@
 package com.angussoftware.myweightaverage.activity
 
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
@@ -45,9 +46,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupDateButtons(startDateButton: Button, endDateButton: Button) {
-        startDateButton.setOnClickListener {
-
+        mapOf(startDateButton to DatePickerDialog.OnDateSetListener { view, year, month, dayOfMonth ->
+            viewModel.setStartDate(year, month, dayOfMonth)
+        }, endDateButton to DatePickerDialog.OnDateSetListener { view, year, month, dayOfMonth ->
+            viewModel.setEndDate(year, month, dayOfMonth)
+        }).forEach { button, onDateSetLister ->
+            button.setOnClickListener {
+                DatePickerDialog(this).apply {
+                    setOnDateSetListener(onDateSetLister)
+                }.show()
+            }
         }
+
     }
 
     private fun setupChartView(anyChartView: AnyChartView) {
