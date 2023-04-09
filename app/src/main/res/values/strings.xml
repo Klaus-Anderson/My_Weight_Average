@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">My Weight Average</string>
+    <string name="set_start_date">Set Start Date</string>
+    <string name="set_end_date">Set End Date</string>
+    <string name="weight_over_time">Weight Over Time</string>
+    <string name="weight_kg">Weight (kg)</string>
+    <string name="Date">Date</string>
 </resources>

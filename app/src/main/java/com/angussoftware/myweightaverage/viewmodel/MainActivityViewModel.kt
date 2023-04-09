@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.*
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
@@ -58,19 +59,23 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
             val granted = permissionController.getGrantedPermissions()
             if (granted.containsAll(Companion.requiredPermissions)) {
                 // Permissions already granted, proceed with inserting or reading data.
-                fetchAndDisplayCurrentWeight()
+                fetchAndDisplayCurrentWeight(
+                    LocalDateTime.now().minusDays(365),
+                    LocalDateTime.now()
+                )
             } else {
                 _launchPermissionRequest.value = Unit
             }
         }
     }
 
-    private suspend fun fetchAndDisplayCurrentWeight() {
+    private suspend fun fetchAndDisplayCurrentWeight(
+        startDateTime: LocalDateTime,
+        endDateTime: LocalDateTime
+    ) {
         val client = initHealthConnectClient() ?: return
 
         viewModelScope.launch(Dispatchers.IO) {
-            val endDateTime = LocalDateTime.now()
-            val startDateTime = endDateTime.minusDays(365)
 
             val weightRecords = client.readRecords(
                 ReadRecordsRequest(
@@ -94,7 +99,12 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
             }
 
             val chartDataList = weightRecords.map { record ->
-                ValueDataEntry(record.time.toString(), record.weight.inKilograms)
+                ValueDataEntry(
+                    DateTimeFormatter.ofPattern("MM/dd/yyyy").format(
+                        record.time.atZone(ZoneId.systemDefault())
+                    ),
+                    record.weight.inKilograms
+                )
             }
 
             withContext(Dispatchers.Main) {

@@ -1,6 +1,7 @@
 package com.angussoftware.myweightaverage.activity
 
 import android.os.Bundle
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
@@ -29,17 +30,9 @@ class MainActivity : AppCompatActivity() {
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
 
-        anyChartView = binding.anyChartView
-        chart = AnyChart.line()
+        setupDateButtons(binding.startDateButton, binding.endDateButton)
 
-        chart.apply {
-            animation(true)
-            title("Weight Over Time")
-            yAxis(0).title("Weight (kg)")
-            xAxis(0).title("Date")
-        }
-
-        anyChartView.setChart(chart)
+        setupChartView(binding.anyChartView)
 
         viewModel.launchPermissionRequest.observe(this) {
             val permissions = MainActivityViewModel.requiredPermissions.toTypedArray()
@@ -49,6 +42,26 @@ class MainActivity : AppCompatActivity() {
         viewModel.chartData.observe(this) { dataEntries ->
             chart.line(dataEntries)
         }
+    }
+
+    private fun setupDateButtons(startDateButton: Button, endDateButton: Button) {
+        startDateButton.setOnClickListener {
+
+        }
+    }
+
+    private fun setupChartView(anyChartView: AnyChartView) {
+        this.anyChartView = anyChartView
+        chart = AnyChart.line()
+
+        chart.apply {
+            animation(false)
+            title(getString(R.string.weight_over_time))
+            yAxis(0).title(getString(R.string.weight_kg))
+            xAxis(0).title(getString(R.string.Date)).labels().rotation(-75)
+        }
+
+        anyChartView.setChart(chart)
     }
 
     override fun onRequestPermissionsResult(
