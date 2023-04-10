@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.chartData.observe(this) { dataEntries ->
+            chart.removeAllSeries()
             chart.line(dataEntries)
         }
     }
@@ -50,7 +51,7 @@ class MainActivity : AppCompatActivity() {
             viewModel.setStartDate(year, month, dayOfMonth)
         }, endDateButton to DatePickerDialog.OnDateSetListener { view, year, month, dayOfMonth ->
             viewModel.setEndDate(year, month, dayOfMonth)
-        }).forEach { button, onDateSetLister ->
+        }).forEach { (button, onDateSetLister) ->
             button.setOnClickListener {
                 DatePickerDialog(this).apply {
                     setOnDateSetListener(onDateSetLister)

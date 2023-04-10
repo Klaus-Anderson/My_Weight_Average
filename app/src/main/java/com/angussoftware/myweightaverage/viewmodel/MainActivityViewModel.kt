@@ -15,13 +15,16 @@ import com.anychart.chart.common.dataentry.ValueDataEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.*
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
 
 class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
 
     private val permissionController = HealthConnectClient.getOrCreate(application).permissionController
+    private var startDateTime = LocalDateTime.now().minusYears(120)
+    private var endDateTime = LocalDateTime.now()
+
     private val _launchPermissionRequest = MutableLiveData<Unit>()
     private val _textViewText = MutableLiveData<String>()
     private val _chartData = MutableLiveData<List<DataEntry>>()
@@ -46,7 +49,7 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    private suspend fun initHealthConnectClient(): HealthConnectClient? {
+    private fun initHealthConnectClient(): HealthConnectClient? {
         return if (HealthConnectClient.isProviderAvailable(getApplication())) {
             HealthConnectClient.getOrCreate(getApplication())
         } else {
@@ -114,11 +117,35 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun setStartDate(year: Int, month: Int, dayOfMonth: Int) {
-//        TODO("Not yet implemented")
+        startDateTime = LocalDateTime.of(year, month + 1, dayOfMonth, 0, 0)
+        if(startDateTime > LocalDateTime.now()){
+            startDateTime = LocalDateTime.now().minusDays(1)
+        }
+        if(startDateTime > endDateTime){
+            endDateTime = LocalDateTime.now()
+        }
+        viewModelScope.launch {
+            fetchAndDisplayCurrentWeight(
+                startDateTime,
+                endDateTime
+            )
+        }
     }
 
     fun setEndDate(year: Int, month: Int, dayOfMonth: Int) {
-//        TODO("Not yet implemented")
+        endDateTime = LocalDateTime.of(year, month + 1, dayOfMonth, 0, 0)
+        if(endDateTime > LocalDateTime.now()){
+            endDateTime = LocalDateTime.now()
+        }
+        if(startDateTime > endDateTime){
+            startDateTime = LocalDateTime.now().minusYears(120)
+        }
+        viewModelScope.launch {
+            fetchAndDisplayCurrentWeight(
+                startDateTime,
+                endDateTime
+            )
+        }
     }
 
     companion object {
