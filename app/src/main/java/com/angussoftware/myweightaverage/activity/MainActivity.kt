@@ -1,6 +1,8 @@
 package com.angussoftware.myweightaverage.activity
 
+import android.app.AlertDialog
 import android.app.DatePickerDialog
+import android.content.DialogInterface
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
@@ -27,7 +29,8 @@ class MainActivity : AppCompatActivity() {
 
         viewModel = ViewModelProvider(this)[MainActivityViewModel::class.java]
 
-        val binding: ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+        val binding: ActivityMainBinding = DataBindingUtil.setContentView(
+            this, R.layout.activity_main)
         binding.viewModel = viewModel
         binding.lifecycleOwner = this
 
@@ -43,6 +46,19 @@ class MainActivity : AppCompatActivity() {
         viewModel.chartData.observe(this) { dataEntries ->
             chart.removeAllSeries()
             chart.line(dataEntries)
+        }
+
+        viewModel.errorBoolean.observe(this) {
+            if(it){
+                AlertDialog.Builder(this)
+                    .setTitle("Error")
+                    .setMessage("There was an error.")
+                    .setPositiveButton("OK") { dialog: DialogInterface, _: Int ->
+                        dialog.dismiss()
+                    }
+                    .create()
+                    .show()
+            }
         }
     }
 

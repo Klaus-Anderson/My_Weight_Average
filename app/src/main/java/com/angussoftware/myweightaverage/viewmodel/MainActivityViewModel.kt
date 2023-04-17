@@ -27,7 +27,10 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
 
     private val _launchPermissionRequest = MutableLiveData<Unit>()
     private val _textViewText = MutableLiveData<String>()
+    private val _startDateText = MutableLiveData<String>()
+    private val _endDateText = MutableLiveData<String>()
     private val _chartData = MutableLiveData<List<DataEntry>>()
+    private val _errorBoolean = MutableLiveData<Boolean>(false)
 
     val launchPermissionRequest: LiveData<Unit>
         get() = _launchPermissionRequest
@@ -35,8 +38,19 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
     val textViewText: LiveData<String>
         get() = _textViewText
 
+
+    val startDateText: LiveData<String>
+        get() = _startDateText
+
+
+    val endDateText: LiveData<String>
+        get() = _endDateText
+
     val chartData: LiveData<List<DataEntry>>
         get() = _chartData
+
+    val errorBoolean: LiveData<Boolean>
+        get() = _errorBoolean
 
     init {
         viewModelScope.launch {
@@ -63,8 +77,8 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
             if (granted.containsAll(Companion.requiredPermissions)) {
                 // Permissions already granted, proceed with inserting or reading data.
                 fetchAndDisplayCurrentWeight(
-                    LocalDateTime.now().minusDays(365),
-                    LocalDateTime.now()
+                    startDateTime,
+                    endDateTime
                 )
             } else {
                 _launchPermissionRequest.value = Unit
@@ -110,18 +124,25 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
                 )
             }
 
+
             withContext(Dispatchers.Main) {
-                _chartData.value = chartDataList
+                if (chartDataList.isEmpty()) {
+                    _errorBoolean.value = true
+                } else {
+                    _startDateText.value = chartDataList.first().getValue("x") as String
+                    _endDateText.value = chartDataList.last().getValue("x") as String
+                    _chartData.value = chartDataList
+                }
             }
         }
     }
 
     fun setStartDate(year: Int, month: Int, dayOfMonth: Int) {
         startDateTime = LocalDateTime.of(year, month + 1, dayOfMonth, 0, 0)
-        if(startDateTime > LocalDateTime.now()){
+        if (startDateTime > LocalDateTime.now()) {
             startDateTime = LocalDateTime.now().minusDays(1)
         }
-        if(startDateTime > endDateTime){
+        if (startDateTime > endDateTime) {
             endDateTime = LocalDateTime.now()
         }
         viewModelScope.launch {
@@ -134,10 +155,10 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
 
     fun setEndDate(year: Int, month: Int, dayOfMonth: Int) {
         endDateTime = LocalDateTime.of(year, month + 1, dayOfMonth, 0, 0)
-        if(endDateTime > LocalDateTime.now()){
+        if (endDateTime > LocalDateTime.now()) {
             endDateTime = LocalDateTime.now()
         }
-        if(startDateTime > endDateTime){
+        if (startDateTime > endDateTime) {
             startDateTime = LocalDateTime.now().minusYears(120)
         }
         viewModelScope.launch {
@@ -146,6 +167,10 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
                 endDateTime
             )
         }
+    }
+
+    fun clearErrorBoolean(){
+        _errorBoolean.postValue(false)
     }
 
     companion object {
