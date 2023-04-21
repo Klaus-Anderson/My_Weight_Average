@@ -6,22 +6,24 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import com.anychart.chart.common.dataentry.DataEntry
 import com.anychart.chart.common.dataentry.ValueDataEntry
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 
-class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class MainActivityViewModel @Inject constructor(
+    val healthConnectClient: HealthConnectClient
+) : ViewModel() {
 
-    private val permissionController = HealthConnectClient.getOrCreate(application).permissionController
+//    private val permissionController = healthConnectClient?.permissionController
     private var startDateTime = LocalDateTime.now().minusYears(120)
     private var endDateTime = LocalDateTime.now()
 
@@ -39,89 +41,81 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         get() = _chartData
 
     init {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                _textViewText.postValue(initHealthConnectClient()?.run {
-                    checkPermissionsAndRun()
-                    "HealthConnectClient is not available"
-                } ?: "HealthConnectClient is not available")
-            }
-        }
-    }
-
-    private fun initHealthConnectClient(): HealthConnectClient? {
-        return if (HealthConnectClient.isProviderAvailable(getApplication())) {
-            HealthConnectClient.getOrCreate(getApplication())
-        } else {
-            null
-        }
+//        viewModelScope.launch {
+//            withContext(Dispatchers.IO) {
+//                _textViewText.postValue(healthConnectClient?.run {
+//                    checkPermissionsAndRun()
+//                    "HealthConnectClient is not available"
+//                } ?: "HealthConnectClient is not available")
+//            }
+//        }
     }
 
     fun checkPermissionsAndRun() {
-        viewModelScope.launch {
-            val granted = permissionController.getGrantedPermissions()
-            if (granted.containsAll(Companion.requiredPermissions)) {
-                // Permissions already granted, proceed with inserting or reading data.
-                fetchAndDisplayCurrentWeight(
-                    LocalDateTime.now().minusDays(365),
-                    LocalDateTime.now()
-                )
-            } else {
-                _launchPermissionRequest.value = Unit
-            }
-        }
+//        viewModelScope.launch {
+//            val granted = permissionController?.getGrantedPermissions()
+//            if (granted?.containsAll(Companion.requiredPermissions) == true) {
+//                // Permissions already granted, proceed with inserting or reading data.
+//                fetchAndDisplayCurrentWeight(
+//                    LocalDateTime.now().minusDays(365),
+//                    LocalDateTime.now()
+//                )
+//            } else {
+//                _launchPermissionRequest.value = Unit
+//            }
+//        }
     }
 
     private suspend fun fetchAndDisplayCurrentWeight(
         startDateTime: LocalDateTime,
         endDateTime: LocalDateTime
     ) {
-        val client = initHealthConnectClient() ?: return
-
-        viewModelScope.launch(Dispatchers.IO) {
-
-            val weightRecords = client.readRecords(
-                ReadRecordsRequest(
-                    WeightRecord::class,
-                    TimeRangeFilter.between(
-                        startDateTime,
-                        endDateTime
-                    )
-                )
-            ).records
-
-            val currentWeight = weightRecords.firstOrNull()?.weight
-            if (currentWeight != null) {
-                withContext(Dispatchers.Main) {
-                    _textViewText.value = "Current Weight: $currentWeight kg"
-                }
-            } else {
-                withContext(Dispatchers.Main) {
-                    _textViewText.value = "No recent weight data available"
-                }
-            }
-
-            val chartDataList = weightRecords.map { record ->
-                ValueDataEntry(
-                    DateTimeFormatter.ofPattern("MM/dd/yyyy").format(
-                        record.time.atZone(ZoneId.systemDefault())
-                    ),
-                    record.weight.inKilograms
-                )
-            }
-
-            withContext(Dispatchers.Main) {
-                _chartData.value = chartDataList
-            }
-        }
+//        val client = healthConnectClient ?: return
+//
+//        viewModelScope.launch(Dispatchers.IO) {
+//
+//            val weightRecords = client.readRecords(
+//                ReadRecordsRequest(
+//                    WeightRecord::class,
+//                    TimeRangeFilter.between(
+//                        startDateTime,
+//                        endDateTime
+//                    )
+//                )
+//            ).records
+//
+//            val currentWeight = weightRecords.firstOrNull()?.weight
+//            if (currentWeight != null) {
+//                withContext(Dispatchers.Main) {
+//                    _textViewText.value = "Current Weight: $currentWeight kg"
+//                }
+//            } else {
+//                withContext(Dispatchers.Main) {
+//                    _textViewText.value = "No recent weight data available"
+//                }
+//            }
+//
+//            val chartDataList = weightRecords.map { record ->
+//                ValueDataEntry(
+//                    DateTimeFormatter.ofPattern("MM/dd/yyyy").format(
+//                        record.time.atZone(ZoneId.systemDefault())
+//                    ),
+//                    record.weight.inKilograms
+//                )
+//            }
+//
+//            withContext(Dispatchers.Main) {
+//                _chartData.value = chartDataList
+//            }
+//        }
     }
 
     fun setStartDate(year: Int, month: Int, dayOfMonth: Int) {
         startDateTime = LocalDateTime.of(year, month + 1, dayOfMonth, 0, 0)
-        if(startDateTime > LocalDateTime.now()){
+        if (startDateTime > LocalDateTime.now()) {
             startDateTime = LocalDateTime.now().minusDays(1)
         }
-        if(startDateTime > endDateTime){
+        if (startDateTime > endDateTime) {
             endDateTime = LocalDateTime.now()
         }
         viewModelScope.launch {
@@ -134,10 +128,10 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
 
     fun setEndDate(year: Int, month: Int, dayOfMonth: Int) {
         endDateTime = LocalDateTime.of(year, month + 1, dayOfMonth, 0, 0)
-        if(endDateTime > LocalDateTime.now()){
+        if (endDateTime > LocalDateTime.now()) {
             endDateTime = LocalDateTime.now()
         }
-        if(startDateTime > endDateTime){
+        if (startDateTime > endDateTime) {
             startDateTime = LocalDateTime.now().minusYears(120)
         }
         viewModelScope.launch {

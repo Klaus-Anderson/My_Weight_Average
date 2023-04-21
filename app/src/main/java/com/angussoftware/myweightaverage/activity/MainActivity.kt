@@ -3,6 +3,7 @@ package com.angussoftware.myweightaverage.activity
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.widget.Button
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
@@ -11,21 +12,19 @@ import com.angussoftware.myweightaverage.databinding.ActivityMainBinding
 import com.angussoftware.myweightaverage.viewmodel.MainActivityViewModel
 import com.anychart.AnyChart
 import com.anychart.AnyChartView
-import com.anychart.chart.common.dataentry.DataEntry
 import com.anychart.charts.Cartesian
-import com.anychart.enums.TooltipPositionMode
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var viewModel: MainActivityViewModel
+    private val viewModel: MainActivityViewModel by viewModels()
     private lateinit var anyChartView: AnyChartView
     private lateinit var chart: Cartesian
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        viewModel = ViewModelProvider(this)[MainActivityViewModel::class.java]
 
         val binding: ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         binding.viewModel = viewModel
