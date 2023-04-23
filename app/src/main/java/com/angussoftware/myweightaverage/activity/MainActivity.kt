@@ -7,15 +7,14 @@ import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
+import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.ViewModelProvider
 import com.angussoftware.myweightaverage.R
 import com.angussoftware.myweightaverage.databinding.ActivityMainBinding
 import com.angussoftware.myweightaverage.viewmodel.MainActivityViewModel
 import com.anychart.AnyChart
 import com.anychart.AnyChartView
-import com.anychart.chart.common.dataentry.DataEntry
 import com.anychart.charts.Cartesian
-import com.anychart.enums.TooltipPositionMode
 
 class MainActivity : AppCompatActivity() {
 
@@ -60,6 +59,10 @@ class MainActivity : AppCompatActivity() {
                     .show()
             }
         }
+
+        initHealthConnectClient()?.let {
+            viewModel.setHealthConnectClient(it)
+        }
     }
 
     private fun setupDateButtons(startDateButton: Button, endDateButton: Button) {
@@ -97,9 +100,19 @@ class MainActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         if (requestCode == PERMISSIONS_REQUEST_CODE) {
-            viewModel.checkPermissionsAndRun()
+            initHealthConnectClient()?.let {
+                viewModel.setHealthConnectClient(it)
+            }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        }
+    }
+
+    private fun initHealthConnectClient(): HealthConnectClient? {
+        return if (HealthConnectClient.isProviderAvailable(application)) {
+            HealthConnectClient.getOrCreate(application)
+        } else {
+            null
         }
     }
 

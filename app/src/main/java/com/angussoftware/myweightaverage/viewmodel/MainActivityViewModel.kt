@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 
 class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val permissionController = HealthConnectClient.getOrCreate(application).permissionController
+    private lateinit var healthConnectClient: HealthConnectClient
     private var startDateTime = LocalDateTime.now().minusYears(120)
     private var endDateTime = LocalDateTime.now()
 
@@ -38,10 +38,8 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
     val textViewText: LiveData<String>
         get() = _textViewText
 
-
     val startDateText: LiveData<String>
         get() = _startDateText
-
 
     val endDateText: LiveData<String>
         get() = _endDateText
@@ -52,28 +50,9 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
     val errorBoolean: LiveData<Boolean>
         get() = _errorBoolean
 
-    init {
+    private fun checkPermissionsAndRun() {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                _textViewText.postValue(initHealthConnectClient()?.run {
-                    checkPermissionsAndRun()
-                    "HealthConnectClient is not available"
-                } ?: "HealthConnectClient is not available")
-            }
-        }
-    }
-
-    private fun initHealthConnectClient(): HealthConnectClient? {
-        return if (HealthConnectClient.isProviderAvailable(getApplication())) {
-            HealthConnectClient.getOrCreate(getApplication())
-        } else {
-            null
-        }
-    }
-
-    fun checkPermissionsAndRun() {
-        viewModelScope.launch {
-            val granted = permissionController.getGrantedPermissions()
+            val granted = healthConnectClient.permissionController.getGrantedPermissions()
             if (granted.containsAll(Companion.requiredPermissions)) {
                 // Permissions already granted, proceed with inserting or reading data.
                 fetchAndDisplayCurrentWeight(
@@ -90,11 +69,9 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         startDateTime: LocalDateTime,
         endDateTime: LocalDateTime
     ) {
-        val client = initHealthConnectClient() ?: return
-
         viewModelScope.launch(Dispatchers.IO) {
 
-            val weightRecords = client.readRecords(
+            val weightRecords = healthConnectClient.readRecords(
                 ReadRecordsRequest(
                     WeightRecord::class,
                     TimeRangeFilter.between(
@@ -169,8 +146,21 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    fun clearErrorBoolean(){
+    fun clearErrorBoolean() {
         _errorBoolean.postValue(false)
+    }
+
+    fun setHealthConnectClient(healthConnectClient: HealthConnectClient) {
+        this.healthConnectClient = healthConnectClient
+        _textViewText.postValue(
+            "HealthConnectClient is available"
+        )
+
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                checkPermissionsAndRun()
+            }
+        }
     }
 
     companion object {
